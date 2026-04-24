@@ -3,25 +3,6 @@ import { getVehicleByPlate, getVehicles, register, update } from "../controllers
 import { vehicleCreateSchema, vehicleUpdateSchema } from "../validators/vehicle.validator";
 import { validate } from "../middlewares/validate.middleware";
 
-/**
- * @swagger
- * /api/v1/vehicles:
- *   get:
- *     summary: Get all vehicles
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: number
- *       - in: query
- *         name: limit
- *         schema:
- *           type: number
- *     responses:
- *       200:
- *         description: List of vehicles
- */
-
 export const vehicleRoutes = Router();
 
 

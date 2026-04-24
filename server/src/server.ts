@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { router } from "./routes/app.routes";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "../docs/swagger";
+import cors from "cors";
 
 
 dotenv.config();
