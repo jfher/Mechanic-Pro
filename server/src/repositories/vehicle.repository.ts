@@ -34,14 +34,20 @@ const findByPlate = (plate: string) =>
 const findAll = async (page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
-    const [data, total] = await prisma.$transaction([
-        prisma.vehicle.findMany({
-            skip,
-            take: limit,
-            include: { owner: true, history: true },
-        }),
-        prisma.vehicle.count(),
-    ]);
+    const data = await prisma.vehicle.findMany({
+        skip,
+        take: limit,
+        include: {
+            owner: {
+                select: {
+                    id: true,
+                    name: true,
+                }
+            }, history: true
+        },
+    });
+
+    const total = await prisma.vehicle.count();
 
     return {
         data,

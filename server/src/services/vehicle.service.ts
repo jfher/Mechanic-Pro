@@ -1,5 +1,5 @@
 import type { CreateVehicleDTO, UpdateVehicleDTO } from "../dtos/vehicle.dto";
-import { userModel } from "../models/user.model";
+import { userRepository } from "../repositories/user.repository";
 import { ConflictError, NotFoundError, BadRequestError, } from "../errors/types";
 import { vehicleRepository } from "../repositories/vehicle.repository";
 
@@ -8,7 +8,7 @@ const registerVehicle = async (data: CreateVehicleDTO) => {
     const existing = await vehicleRepository.findByPlate(data.plate);
     if (existing) throw new ConflictError("Plate already registered");
 
-    const owner = await userModel.findById(data.ownerId);
+    const owner = await userRepository.findById(data.ownerId);
     if (!owner) throw new NotFoundError("Owner not found");
 
     return vehicleRepository.create(data);

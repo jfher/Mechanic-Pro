@@ -1,23 +1,21 @@
+import { toServiceResponse } from "../mappers/service.mapper";
 import { serviceService } from "../services/service.service";
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
         const service = await serviceService.registerService(req.body);
         res.status(201).json({
             success: true,
-            data: { service }
+            data: toServiceResponse(service)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error)
     }
 };
 
-export const update = async (req: Request, res: Response) => {
+export const update = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
         const serviceId = req.params.serviceId;
@@ -31,29 +29,27 @@ export const update = async (req: Request, res: Response) => {
 
         res.status(201).json({
             success: true,
-            data: { service }
+            data: toServiceResponse(service)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 
 
 };
 
-export const getServices = async (req: Request, res: Response) => {
-    const services = await serviceService.listServices();
+export const getServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+
+        const result = await serviceService.listServices(page, limit);
+
         res.status(200).json({
             success: true,
-            data: services
+            data: result.data.map(toServiceResponse)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 };

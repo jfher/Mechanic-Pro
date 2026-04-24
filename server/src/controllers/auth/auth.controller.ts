@@ -1,8 +1,9 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { authService } from "../../services/auth/auth.service";
+import { toAuthResponse } from "../../mappers/auth/auth.mapper";
 
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = req.body;
 
@@ -16,13 +17,16 @@ export const login = async (req: Request, res: Response) => {
             secure: true
         });
 
-        res.status(200).json({ success: true, data: { accessToken, user: { name: user.name, id: user.id, email: user.email } } });
-    } catch (error: any) {
-        res.status(401).json({ success: false, data: {}, error: error.message });
+        res.status(200).json({
+            success: true,
+            data: toAuthResponse(user, accessToken)
+        });
+    } catch (error) {
+        next(error);
     }
 };
 
-export const refresh = async (req: Request, res: Response) => {
+export const refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const token = req.cookies.refreshToken;
 
@@ -36,11 +40,11 @@ export const refresh = async (req: Request, res: Response) => {
 
         res.status(200).json({ accessToken });
     } catch (error: any) {
-        res.status(403).json({ success: false, error: error.message });
+        next(error);
     }
 };
 
-export const logout = async (req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const token = req.cookies.refreshToken;
 
@@ -49,6 +53,6 @@ export const logout = async (req: Request, res: Response) => {
         res.clearCookie("refreshToken");
         res.status(204).json({ success: true });
     } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+        next(error);
     }
-};  
+};

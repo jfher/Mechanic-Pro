@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(50)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(100)
+
+  vehicles   Vehicle[]
+  sessions   Session[]
+  services   Service[] 
+  userRoles  UserRoles[]
+  processes Process[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id        String      @id @default(uuid()) @db.Uuid
+  name      String      @unique @db.VarChar(20)
+  userRoles UserRoles[]
+}
+
+model UserRoles {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId]) // evita duplicados
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  refreshToken String   @unique
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//////////////////////
+// VEHICLE DOMAIN
+//////////////////////
+
+model Vehicle {
+  id     String @id @default(uuid()) @db.Uuid
+  brand  String @db.VarChar(50)
+  model  String @db.VarChar(50)
+  year   String @db.VarChar(4)
+  plate  String @unique @db.VarChar(10)
+  color  String @db.VarChar(30)
+
+  ownerId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  history     History?
+  processes Process[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+//////////////////////
+// HISTORY & SERVICES
+//////////////////////
+
+model History {
+  id        String  @id @default(uuid()) @db.Uuid
+  vehicleId String  @unique @db.Uuid
+
+  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id])
+  services Service[]
+
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(50)
+  description String   @db.Text
+  price       Float
+
+  startDate DateTime @default(now())
+  endDate   DateTime?
+
+  status Status @default(PENDING)
+
+  operatorId String @db.Uuid
+  operator   User   @relation(fields: [operatorId], references: [id])
+
+  historyId String  @db.Uuid
+  history   History @relation(fields: [historyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////
+// WORKFLOW
+//////////////////////
+
+model Process {
+  id         String   @id @default(uuid()) @db.Uuid
+  vehicleId  String   @db.Uuid
+  operatorId String   @db.Uuid
+  date       DateTime @default(now())
+  type  ProcessType @default(ADMISSION)
+
+  vehicle  Vehicle @relation(fields: [vehicleId], references: [id])
+  operator User    @relation(fields: [operatorId], references: [id])
+}
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Status {
+  PENDING
+  ON_PROGRESS
+  DELAYED
+  FINISHED
+}
+
+enum ProcessType {
+  ADMISSION
+  RETIREMENT
+}

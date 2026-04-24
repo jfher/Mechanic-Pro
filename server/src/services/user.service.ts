@@ -1,35 +1,28 @@
-import { userModel } from "../models/user.model";
+import { userRepository } from "../repositories/user.repository";
 import type { CreateUserDTO, UpdateUserDTO } from "../dtos/user.dto";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors/types";
 
 const registerUser = async (data: CreateUserDTO) => {
-    const existingUser = await userModel.findByEmail(data.email);
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing) throw new ConflictError("Email already registered");
 
-    if (existingUser) {
-        throw new Error("Email already registered");
-    }
-
-    const user = await userModel.createUser(data);
-
-    return user;
+    return await userRepository.create(data);
 };
 
 const updateUser = async (id: string, data: UpdateUserDTO) => {
 
-    const existingUser = await userModel.findById(id);
+    const existing = await userRepository.findById(id);
+    if (!existing) throw new NotFoundError("User not found");
 
-    if (!existingUser) {
-        throw new Error("UserID not found");
-    }
+    if (Object.keys(data).length === 0)
+        throw new BadRequestError("No data provided");
 
-    if (Object.keys(data).length === 0) throw new Error("User data must be sended to update");
-
-    return userModel.updateUser(id, data);
+    return userRepository.update(id, data);
 
 };
 
-
-const listUsers = async () => {
-    return userModel.getAllUsers();
+const listUsers = async (page: number, limit: number) => {
+    return userRepository.findAll(page, limit);
 };
 
 export const userService = {

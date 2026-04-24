@@ -1,59 +1,53 @@
+import type { Request, Response, NextFunction } from 'express';
 import { userService } from "../services/user.service";
-import type { Request, Response } from 'express';
+import { toUserResponse } from '../mappers/user.mapper';
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
         const user = await userService.registerUser(req.body);
         res.status(201).json({
             success: true,
-            data: { user }
+            data: toUserResponse(user)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error)
     }
 };
 
-export const update = async (req: Request, res: Response) => {
+export const update = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-        const userId = req.params.userId;
+        const userId = req.params.userId as string;
 
         if (!userId) return res.status(400).json({
             success: false,
             error: "UserId paramater is required"
         })
 
-        const user = await userService.updateUser(userId.toString(), req.body);
+        const user = await userService.updateUser(userId, req.body);
 
         res.status(201).json({
             success: true,
-            data: { user }
+            data: toUserResponse(user)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
-
-
 };
 
-export const getUsers = async (req: Request, res: Response) => {
-    const users = await userService.listUsers();
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+
+        const result = await userService.listUsers(page, limit);
+
         res.status(200).json({
             success: true,
-            data: users
+            ...result
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 };

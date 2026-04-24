@@ -1,34 +1,28 @@
-import { roleModel } from "../models/role.model";
 import type { CreateRoleDTO, UpdateRoleDTO } from "../dtos/role.dto";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors/types";
+import { roleRepository } from "../repositories/role.repository";
 
 const registerRole = async (data: CreateRoleDTO) => {
-    const existingRole = await roleModel.findByName(data.name);
+    const existing = await roleRepository.findByName(data.name);
+    if (existing) throw new ConflictError("Role already registered");
 
-    if (existingRole) {
-        throw new Error("Role already registered");
-    }
-
-    const role = await roleModel.createRole(data);
-
-    return role;
+    return roleRepository.create(data);
 };
 
 const updateRole = async (id: string, data: UpdateRoleDTO) => {
 
-    const existingRole = await roleModel.findById(id);
+    const existing = await roleRepository.findById(id);
+    if (!existing) throw new NotFoundError("Role not found");
 
-    if (!existingRole) {
-        throw new Error("RoleId not found");
-    }
+    if (Object.keys(data).length === 0)
+        throw new BadRequestError("No data provided");
 
-    if (Object.keys(data).length === 0) throw new Error("Role data must be sended to update");
-
-    return roleModel.updateRole(id, data);
+    return roleRepository.update(id, data);
 
 };
 
-const listRoles = async () => {
-    return roleModel.getAllRoles();
+const listRoles = (page: number, limit: number) => {
+    return roleRepository.findAll(page, limit);
 };
 
 export const roleService = {

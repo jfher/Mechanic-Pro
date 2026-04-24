@@ -42,7 +42,7 @@ export const getVehicles = async (req: Request, res: Response, next: NextFunctio
 
         res.json({
             success: true,
-            ...result,
+            data: result.data.map(toVehicleResponse)
         });
     } catch (err) {
         next(err);

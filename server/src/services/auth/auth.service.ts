@@ -1,21 +1,20 @@
 import bcrypt from "bcrypt";
-import { sessionModel } from "../../models/auth/auth.model";
 import { generateTokens } from "../../lib/auth.utils";
-import { userModel } from "../../models/user.model";
+import { sessionRepository } from "../../repositories/auth/auth.repository";
+import { ConflictError, NotFoundError } from "../../errors/types";
+import { userRepository } from "../../repositories/user.repository";
 
 
 const loginUser = async (email: string, password: string) => {
-    const user = await userModel.findByEmail(email);
-
-    if (!user) throw new Error("User not found");
+    const user = await userRepository.findByEmail(email);
+    if (!user) throw new NotFoundError("User not found");
 
     const valid = await bcrypt.compare(password, user.password);
-
-    if (!valid) throw new Error("Invalid credentials");
+    if (!valid) throw new ConflictError("Invalid Credentials");
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    await sessionModel.createSession({
+    await sessionRepository.createSession({
         userId: user.id,
         refreshToken,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -25,15 +24,14 @@ const loginUser = async (email: string, password: string) => {
 };
 
 const refreshTokenService = async (token: string) => {
-    const session = await sessionModel.findSessionByToken(token);
+    const session = await sessionRepository.findSessionByToken(token);
+    if (!session) throw new NotFoundError("Invalid session");
 
-    if (!session) throw new Error("Invalid session");
-
-    await sessionModel.deleteSession(session.id);
+    await sessionRepository.deleteSession(session.id);
 
     const { accessToken, refreshToken } = generateTokens(session.userId);
 
-    await sessionModel.createSession({
+    await sessionRepository.createSession({
         userId: session.userId,
         refreshToken,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -43,7 +41,7 @@ const refreshTokenService = async (token: string) => {
 };
 
 const logoutService = async (token: string) => {
-    await sessionModel.deleteSessionByToken(token);
+    await sessionRepository.deleteSessionByToken(token);
 };
 
 export const authService = {

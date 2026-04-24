@@ -1,50 +1,35 @@
 
-import { processModel } from "../models/process.model";
+import { processRepository } from "../repositories/process.repository";
 import type { CreateProcessDTO, UpdateProcessDTO } from "../dtos/process.dto";
-import { userModel } from "../models/user.model";
 import { vehicleModel } from "../models/vehicle.model";
-import { z } from 'zod'
+import { BadRequestError, NotFoundError } from "../errors/types";
+import { userRepository } from "../repositories/user.repository";
 
 const registerProcess = async (data: CreateProcessDTO) => {
-    // const existingProcess = await processModel.findByType(data.type);
-    // console.log(existingProcess)
 
-    // if (existingProcess && existingProcess.length > 0) {
-    //     throw new Error("Process with that type is already registered");
-    // }
-
-    const operator = await userModel.findById(data.operatorId);
-    if (!operator || !z.uuid(data.operatorId)) {
-        throw new Error("OperatorId is not valid");
-    }
+    const operator = await userRepository.findById(data.operatorId);
+    if (!operator) throw new NotFoundError("Operator not found");
 
     const vehicle = await vehicleModel.findById(data.vehicleId);
-    if (!vehicle || !z.uuid(data.vehicleId)) {
-        throw new Error("VehicleId is not valid");
-    }
+    if (!vehicle) throw new NotFoundError("Vehicle not found");
 
-    const process = await processModel.createProcess(data);
-
-    return process;
+    return await processRepository.create(data);
 };
 
 const updateProcess = async (id: string, data: UpdateProcessDTO) => {
 
-    const existingProcess = await processModel.findById(id);
+    const existing = await processRepository.findById(id);
+    if (!existing) throw new NotFoundError("Process not found");
 
-    if (!existingProcess) {
-        throw new Error("Process Id is not valid or registered");
-    }
+    if (Object.keys(data).length === 0)
+        throw new BadRequestError("No data provided");
 
-    if (Object.keys(data).length === 0) throw new Error("Process data must be sended to update");
-
-    return processModel.updateProcess(id, data);
-
+    return processRepository.update(id, data);
 };
 
 
-const listProcess = async () => {
-    return processModel.getAllProcess();
+const listProcess = async (page: number, limit: number) => {
+    return processRepository.findAll(page, limit);
 };
 
 export const processService = {

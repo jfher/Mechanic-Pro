@@ -1,59 +1,52 @@
+import type { Request, Response, NextFunction } from 'express';
 import { processService } from "../services/process.service";
-import type { Request, Response } from 'express';
+import { toProcessResponse } from '../mappers/process.mapper';
 
-export const register = async (req: Request, res: Response) => {
-
+export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const process = await processService.registerProcess(req.body);
         res.status(201).json({
             success: true,
-            data: { process }
+            data: toProcessResponse(process)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 };
 
-export const update = async (req: Request, res: Response) => {
-
+export const update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const processId = req.params.processId;
+        const processId = req.params.processId as string;
 
         if (!processId) return res.status(400).json({
             success: false,
             error: "Process Id parameter is required"
         })
 
-        const process = await processService.updateProcess(processId.toString(), req.body);
+        const process = await processService.updateProcess(processId, req.body);
 
         res.status(201).json({
             success: true,
-            data: { process }
+            data: toProcessResponse(process)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 
 
 };
 
-export const getProcess = async (req: Request, res: Response) => {
-    const process = await processService.listProcess();
+export const getProcess = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+
+        const result = await processService.listProcess(page, limit);
         res.status(200).json({
             success: true,
-            data: process
+            data: result.data.map(toProcessResponse)
         });
     } catch (error) {
-        return res.status(400).json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        })
+        next(error);
     }
 };

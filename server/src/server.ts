@@ -16,6 +16,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.use(cors({
+    origin: "*", // en dev
+    credentials: true,
+}));
+
 app.use(`${rootPath}`, router);
 
 app.listen(PORT, () => {
